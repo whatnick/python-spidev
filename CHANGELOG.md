@@ -1,6 +1,15 @@
 Changelog
 ---------
 
+
+4.0.0
+=====
+
+**First Onion version**
+
+Changed structure for cross compilation using LEDE build system.
+
+
 3.0.1
 =====
 
