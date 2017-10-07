@@ -19,10 +19,10 @@ CFLAGS := -g # -Wall
 PYINC := "-I/usr/include/python2.7"
 INC := $(PYINC)
 
-LIB := -L$(LIBDIR) -lpython2.7
+LIB := -lpython2.7
 
 # define specific binaries to create
-TARGET := $(BINDIR)/spidev
+TARGET := $(LIBDIR)/spidev.so
 
 
 ## Makefile rules
@@ -30,7 +30,7 @@ all: $(TARGET)
 
 $(TARGET): $(OBJECTS)
 	@echo " Compiling $@"
-	@mkdir -p $(BINDIR)
+	@mkdir -p $(dir $@)
 	$(CC) -shared -o $@  $^ $(LIB)
 
 # generic: build any object file required
