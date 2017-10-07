@@ -22,7 +22,7 @@ INC := $(PYINC)
 LIB := -L$(LIBDIR) -lpython2.7
 
 # define specific binaries to create
-TARGET := python-spidev
+TARGET := $(BINDIR)/spidev
 
 
 ## Makefile rules
