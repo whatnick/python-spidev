@@ -44,6 +44,8 @@
 #define PyInt_Type			PyLong_Type
 #endif
 
+//#define SPIDEV_SINGLE	1
+
 PyDoc_STRVAR(SpiDev_module_doc,
 	"This module defines an object type that allows SPI transactions\n"
 	"on hosts running the Linux kernel. The host kernel must have SPI\n"
@@ -276,7 +278,7 @@ SpiDev_xfer(SpiDevObject *self, PyObject *args)
 		if (PyInt_Check(val)) {
 			txbuf[ii] = (__u8)PyInt_AS_LONG(val);
 		} else
-#endif
+#endif	// PY_MAJOR_VERSION
 		{
 			if (PyLong_Check(val)) {
 				txbuf[ii] = (__u8)PyLong_AS_LONG(val);
@@ -292,15 +294,15 @@ SpiDev_xfer(SpiDevObject *self, PyObject *args)
 		xferptr[ii].tx_buf = (unsigned long)&txbuf[ii];
 		xferptr[ii].rx_buf = (unsigned long)&rxbuf[ii];
 		xferptr[ii].len = 1;
-		xferptr[ii].delay_usecs = delay;
+		xferptr[ii].delay_usecs = delay_usecs;
 		xferptr[ii].speed_hz = speed_hz ? speed_hz : self->max_speed_hz;
 		xferptr[ii].bits_per_word = bits_per_word ? bits_per_word : self->bits_per_word;
 #ifdef SPI_IOC_WR_MODE32
 		xferptr[ii].tx_nbits = 0;
-#endif
+#endif	// SPI_IOC_WR_MODE32
 #ifdef SPI_IOC_RD_MODE32
 		xferptr[ii].rx_nbits = 0;
-#endif
+#endif	// SPI_IOC_RD_MODE32
 	}
 
 	status = ioctl(self->fd, SPI_IOC_MESSAGE(len), xferptr);
@@ -311,14 +313,14 @@ SpiDev_xfer(SpiDevObject *self, PyObject *args)
 		free(rxbuf);
 		return NULL;
 	}
-#else
+#else	// not SPIDEV_SINGLE
 	for (ii = 0; ii < len; ii++) {
 		PyObject *val = PySequence_Fast_GET_ITEM(seq, ii);
 #if PY_MAJOR_VERSION < 3
 		if (PyInt_Check(val)) {
 			txbuf[ii] = (__u8)PyInt_AS_LONG(val);
 		} else
-#endif
+#endif	// PY_MAJOR_VERSION
 		{
 			if (PyLong_Check(val)) {
 				txbuf[ii] = (__u8)PyLong_AS_LONG(val);
@@ -345,10 +347,10 @@ SpiDev_xfer(SpiDevObject *self, PyObject *args)
 	xfer.bits_per_word = bits_per_word ? bits_per_word : self->bits_per_word;
 #ifdef SPI_IOC_WR_MODE32
 	xfer.tx_nbits = 0;
-#endif
+#endif	// SPI_IOC_WR_MODE32
 #ifdef SPI_IOC_RD_MODE32
 	xfer.rx_nbits = 0;
-#endif
+#endif	// SPI_IOC_RD_MODE32
 
 	status = ioctl(self->fd, SPI_IOC_MESSAGE(1), &xfer);
 	if (status < 0) {
@@ -357,7 +359,7 @@ SpiDev_xfer(SpiDevObject *self, PyObject *args)
 		free(rxbuf);
 		return NULL;
 	}
-#endif
+#endif	// SPIDEV_SINGLE
 
 	for (ii = 0; ii < len; ii++) {
 		PyObject *val = Py_BuildValue("l", (long)rxbuf[ii]);
