@@ -1,6 +1,5 @@
 import sys
 import spidev
-import time
 
 # instantiate the spi object
 spi = spidev.SpiDev(32766,1)
