@@ -498,8 +498,8 @@ SpiDev_xfer2(SpiDevObject *self, PyObject *args)
 }
 
 PyDoc_STRVAR(SpiDev_xfer3_doc,
-	"xfer3([values]) -> [values]\n\n"
-	"Perform subsequent duplex-SPI transaction.\n"
+	"xfer3([write values],[bytes to read]) -> [read values]\n\n"
+	"Perform subsequent duplex-SPI transaction (write address, read response).\n"
 	"CS will be held active between blocks.\n");
 
 static PyObject *
@@ -507,6 +507,7 @@ SpiDev_xfer3(SpiDevObject *self, PyObject *args)
 {
 	int status;
 	uint16_t delay_usecs = 0;
+	uint32_t read_len = 0; //Length of bytes to read
 	uint32_t speed_hz = 0;
 	uint8_t bits_per_word = 0;
 	uint16_t ii, len;
@@ -519,7 +520,7 @@ SpiDev_xfer3(SpiDevObject *self, PyObject *args)
 	uint8_t *txbuf, *rxbuf;
 	char	wrmsg_text[4096];
 
-	if (!PyArg_ParseTuple(args, "O|IHB:xfer2", &obj, &speed_hz, &delay_usecs, &bits_per_word))
+	if (!PyArg_ParseTuple(args, "OI|IHB:xfer3", &obj, &read_len, &speed_hz, &delay_usecs, &bits_per_word))
 		return NULL;
 
 	seq = PySequence_Fast(obj, "expected a sequence");
@@ -537,7 +538,7 @@ SpiDev_xfer3(SpiDevObject *self, PyObject *args)
 
 	Py_BEGIN_ALLOW_THREADS
 	txbuf = malloc(sizeof(__u8) * len);
-	rxbuf = malloc(sizeof(__u8) * len);
+	rxbuf = malloc(sizeof(__u8) * len); // TODO: Add read length
 	Py_END_ALLOW_THREADS
 
 	for (ii = 0; ii < len; ii++) {
@@ -573,6 +574,9 @@ SpiDev_xfer3(SpiDevObject *self, PyObject *args)
 	xfer.speed_hz = speed_hz ? speed_hz : self->max_speed_hz;
 	xfer.bits_per_word = bits_per_word ? bits_per_word : self->bits_per_word;
 
+	//TODO: It would look like this: values = spi.xfer3([<list of bytes to write>], <number of bytes to read>)
+    //so in the case from the previous post: values = spi.xfer3([0x80,0xD9], 2)
+
 	status = ioctl(self->fd, SPI_IOC_MESSAGE(1), &xfer);
 	Py_END_ALLOW_THREADS
 	if (status < 0) {
@@ -590,7 +594,7 @@ SpiDev_xfer3(SpiDevObject *self, PyObject *args)
 	// in CS_HIGH mode CS isnt pulled to low after transfer
 	// reading 0 bytes doesn't really matter but brings CS down
 	// tomdean:
-	// Stop generating an extra CS except in mode CS_HOGH
+	// Stop generating an extra CS except in mode CS_HIGH
 	if (self->mode & SPI_CS_HIGH) status = read(self->fd, &rxbuf[0], 0);
 
 	Py_BEGIN_ALLOW_THREADS
