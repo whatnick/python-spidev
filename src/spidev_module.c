@@ -497,6 +497,8 @@ SpiDev_xfer2(SpiDevObject *self, PyObject *args)
 	return seq;
 }
 
+//It would look like this: values = spi.xfer3([<list of bytes to write>], <number of bytes to read>)
+//so in the case from the previous post: values = spi.xfer3([0x80,0xD9], 2)
 PyDoc_STRVAR(SpiDev_xfer3_doc,
 	"xfer3([write values],[bytes to read]) -> [read values]\n\n"
 	"Perform subsequent duplex-SPI transaction (write address, read response).\n"
@@ -513,6 +515,8 @@ SpiDev_xfer3(SpiDevObject *self, PyObject *args)
 	uint16_t ii, len;
 	PyObject *obj;
 	PyObject *seq;
+	// Read sequence
+	PyObject *read_seq;
 	struct spi_ioc_transfer xfer;
 	Py_BEGIN_ALLOW_THREADS
 	memset(&xfer, 0, sizeof(xfer));
@@ -537,10 +541,13 @@ SpiDev_xfer3(SpiDevObject *self, PyObject *args)
 	}
 
 	Py_BEGIN_ALLOW_THREADS
-	txbuf = malloc(sizeof(__u8) * len);
-	rxbuf = malloc(sizeof(__u8) * len); // TODO: Add read length
+	// The malloc-ed length would be based on the length of the input list AND the number of bytes to be read
+	uint32_t total_len = len+read_len;
+	txbuf = malloc(sizeof(__u8) * total_len);
+	rxbuf = malloc(sizeof(__u8) * total_len);
 	Py_END_ALLOW_THREADS
-
+	// There would be a loop to populate xferptr elements with the bytes
+	// that should be written - along with nothing in the rx_buf element
 	for (ii = 0; ii < len; ii++) {
 		PyObject *val = PySequence_Fast_GET_ITEM(seq, ii);
 #if PY_MAJOR_VERSION < 3
@@ -569,13 +576,10 @@ SpiDev_xfer3(SpiDevObject *self, PyObject *args)
 	Py_BEGIN_ALLOW_THREADS
 	xfer.tx_buf = (unsigned long)txbuf;
 	xfer.rx_buf = (unsigned long)rxbuf;
-	xfer.len = len;
+	xfer.len = total_len;
 	xfer.delay_usecs = delay_usecs;
 	xfer.speed_hz = speed_hz ? speed_hz : self->max_speed_hz;
 	xfer.bits_per_word = bits_per_word ? bits_per_word : self->bits_per_word;
-
-	//TODO: It would look like this: values = spi.xfer3([<list of bytes to write>], <number of bytes to read>)
-    //so in the case from the previous post: values = spi.xfer3([0x80,0xD9], 2)
 
 	status = ioctl(self->fd, SPI_IOC_MESSAGE(1), &xfer);
 	Py_END_ALLOW_THREADS
@@ -585,11 +589,17 @@ SpiDev_xfer3(SpiDevObject *self, PyObject *args)
 		free(rxbuf);
 		return NULL;
 	}
-
-	for (ii = 0; ii < len; ii++) {
-		PyObject *val = Py_BuildValue("l", (long)rxbuf[ii]);
-		PySequence_SetItem(seq, ii, val);
+	
+	// Create output sequence with read_len bytes
+	read_seq = PyList_New(read_len);
+	// Read input buffer
+	for (ii = 0; ii < read_len; ii++) {
+		PyObject *val = Py_BuildValue("l", (long)rxbuf[len+ii]);
+		PySequence_SetItem(read_seq, ii, val);
 	}
+
+	
+
 	// WA:
 	// in CS_HIGH mode CS isnt pulled to low after transfer
 	// reading 0 bytes doesn't really matter but brings CS down
@@ -602,14 +612,15 @@ SpiDev_xfer3(SpiDevObject *self, PyObject *args)
 	free(rxbuf);
 	Py_END_ALLOW_THREADS
 
-
+	// Free input sequence object
+	// for reference counting
 	if (PyTuple_Check(obj)) {
 		PyObject *old = seq;
-		seq = PySequence_Tuple(seq);
 		Py_DECREF(old);
 	}
 
-	return seq;
+	// Return new list of values read
+	return read_seq;
 }
 
 static int __spidev_set_mode( int fd, __u8 mode) {
