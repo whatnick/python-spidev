@@ -7,6 +7,18 @@ This is a modified version of the code originally found [here](http://elk.inform
 
 All code is GPLv2 licensed unless explicitly stated otherwise.
 
+Installation on Omega2
+-----
+
+Connect to the Omega's command line and run the following commands:
+```
+opkg update
+opkg install python-spidev
+```
+
+See more details here: https://onion.io/2bt-brand-new-os-release/#spiimprovement
+
+
 Usage
 -----
 
