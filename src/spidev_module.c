@@ -515,8 +515,7 @@ SpiDev_xfer3(SpiDevObject *self, PyObject *args)
 	uint16_t ii, write_len;
 	PyObject *obj;
 	PyObject *seq;
-	// Read sequence
-	PyObject *read_seq;
+	PyObject	*list;
 	struct spi_ioc_transfer xfer[2];
 	Py_BEGIN_ALLOW_THREADS
 	memset(&xfer, 0, sizeof(xfer));
@@ -539,7 +538,6 @@ SpiDev_xfer3(SpiDevObject *self, PyObject *args)
 		PyErr_SetString(PyExc_OverflowError, wrmsg_text);
 		return NULL;
 	}
-	printf("write_len = %d\nread_len = %d\n", write_len, read_len);
 
 	Py_BEGIN_ALLOW_THREADS
 	// The malloc-ed length would be based on the length of the input list AND the number of bytes to be read
@@ -599,16 +597,10 @@ SpiDev_xfer3(SpiDevObject *self, PyObject *args)
 	}
 	
 	// Create output sequence with read_len bytes
-	// TODO: debug this portion - currently causes a segfault
-	read_seq = PyList_New(read_len);
-	// printf("created read_seq with length %d\n", read_len);
-	// Read input buffer
+	list = PyList_New(read_len);
 	for (ii = 0; ii < read_len; ii++) {
-		// printf("index %d: 0x%02x\n",ii,rxbuf[ii]);
 		PyObject *val = Py_BuildValue("l", (long)rxbuf[ii]);
-		// printf("   setting pyobject value\n");
-		PySequence_SetItem(read_seq, ii, val);
-		// printf("   added to read_seq\n");
+		PyList_SET_ITEM(list, ii, val);
 	}
 
 	
@@ -627,13 +619,14 @@ SpiDev_xfer3(SpiDevObject *self, PyObject *args)
 
 	// Free input sequence object
 	// for reference counting
+	// TODO: does this still count the seq object as a reference?
 	if (PyTuple_Check(obj)) {
 		PyObject *old = seq;
 		Py_DECREF(old);
 	}
 
 	// Return new list of values read
-	return read_seq;
+	return list;
 }
 
 static int __spidev_set_mode( int fd, __u8 mode) {
