@@ -1,7 +1,7 @@
 import sys
 import spidev
 
-# instantiate the spi object
+## instantiate the spi object
 # for Omega2 firmware v0.3.0 and up:
 #spi = spidev.SpiDev(0,1)
 # for older firmware:
