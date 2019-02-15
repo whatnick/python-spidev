@@ -57,29 +57,29 @@ Connects to the specified SPI device, opening `/dev/spidev<bus>.<device>`
 ```
 open(bus, device)
 ```
-
+---
 Read n bytes from SPI device. Returns list of bytes read by SPI controller
 ```
 readbytes(n)
 ```
-
+---
 Writes a list of values to SPI device.
 ```
 writebytes(list of values)
 ```
-
+---
 Performs an SPI transaction. **Chip-select should be released and reactivated between blocks.**
 Delay specifies the delay in usec between blocks. Returns list of bytes read by SPI controller.
 ```
 xfer(list of values[, speed_hz, delay_usec, bits_per_word])
 ```
-
+---
 Performs an SPI transaction. **Chip-select should be held active between blocks.**
 Returns list of bytes read by SPI controller.
 ```
 xfer2(list of values[, speed_hz, delay_usec, bits_per_word])
 ```
-
+---
 Performs a half-duplex SPI transaction. **Chip-select should be held active between blocks.**
 Returns list of bytes read by SPI controller. 
 > ***Use this function when the intent is to write a number of bytes and then immediately read a number of bytes (register reads for example)***
@@ -87,7 +87,7 @@ Returns list of bytes read by SPI controller.
 xfer2(list of values to be written, number of bytes to read, [, speed_hz, delay_usec, bits_per_word])
 ```
 
-
+---
 Disconnects from the SPI device.
 ```
 close()
