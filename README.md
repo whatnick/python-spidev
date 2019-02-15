@@ -11,7 +11,7 @@ All code is GPLv2 licensed unless explicitly stated otherwise.
 Connect to the Omega's command line and run the following commands:
 ```
 opkg update
-opkg install python-spidev
+opkg install python-light python-spidev
 ```
 
 See more details here: https://onion.io/2bt-brand-new-os-release/#spiimprovement
@@ -92,7 +92,7 @@ Performs a half-duplex SPI transaction. **Chip-select should be held active betw
 Returns list of bytes read by SPI controller. 
 > ***Use this function when the intent is to write a number of bytes and then immediately read a number of bytes (register reads for example)***
 ```
-xfer3(list of values to be written, number of bytes to read, [, speed_hz, delay_usec, bits_per_word])
+xfer3(list of values to be written, number of bytes to read [, speed_hz, delay_usec, bits_per_word])
 ```
 
 
