@@ -3,9 +3,10 @@ import spidev
 
 ## instantiate the spi object
 # for Omega2 firmware v0.3.0 and up:
-#spi = spidev.SpiDev(0,1)
+spi = spidev.SpiDev(0,1)
 # for older firmware:
-spi = spidev.SpiDev(32766,1)
+#spi = spidev.SpiDev(32766,1)
+
 # set the speed to 4MHz
 spi.max_speed_hz=4000000
 
@@ -17,4 +18,4 @@ readVals = spi.xfer3([0x42], 2)
 print("Read:", readVals)
 
 
-print "Done"
+print("Done")
