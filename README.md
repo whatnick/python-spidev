@@ -8,10 +8,19 @@ All code is GPLv2 licensed unless explicitly stated otherwise.
 
 ## Installation on Omega2
 
-Connect to the Omega's command line and run the following commands:
+> The spidev module is available for Python2 and Python3, the installation commands are slightly different.
+
+Connect to the Omega's command line and run the following commands to install the **Python2** module:
 ```
 opkg update
 opkg install python-light python-spidev
+```
+
+To install the **Python3** module, run this set of commands
+Connect to the Omega's command line and run the following commands to install the **Python2** module:
+```
+opkg update
+opkg install python3-light python3-spidev
 ```
 
 See more details here: https://onion.io/2bt-brand-new-os-release/#spiimprovement
