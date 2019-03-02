@@ -6,6 +6,13 @@ This is a modified version of the code originally found [here](http://elk.inform
 
 All code is GPLv2 licensed unless explicitly stated otherwise.
 
+## More Details on Use with the Omega2
+
+See more details here:
+
+* https://onion.io/2bt-brand-new-os-release/#spiimprovement
+* http://community.onion.io/topic/3179/spi-bus-in-python/17
+
 ## Installation on Omega2
 
 > The spidev module is available for Python2 and Python3, the installation commands are slightly different.
@@ -16,15 +23,13 @@ opkg update
 opkg install python-light python-spidev
 ```
 
+---
+
 To install the **Python3** module, run this set of commands
-Connect to the Omega's command line and run the following commands to install the **Python2** module:
 ```
 opkg update
 opkg install python3-light python3-spidev
 ```
-
-See more details here: https://onion.io/2bt-brand-new-os-release/#spiimprovement
-
 
 ## Usage
 
