@@ -29,7 +29,7 @@ LEGACY := $(LIBDIR)/spidev.so
 
 
 ## Makefile rules
-all: validate $(TARGET) $(LEGACY)
+all: info validate $(TARGET) $(LEGACY)
 
 $(TARGET): $(OBJECTS)
 	@echo " Compiling $@"
@@ -43,9 +43,11 @@ $(BUILDDIR)/%.o: $(SRCDIR)/%.$(SRCEXT)
 
 	
 $(LEGACY): $(TARGET)
+ifeq ($(PYTHON_VERSION),2.7)
 	@echo " Copying to legacy location for backward compatibility"
 	@mkdir -p $(dir $@)
-	$(CP) $(TARGET) $(LEGACY)
+	cp $(TARGET) $(LEGACY)
+endif
 
 validate:
 ifeq ($(PYTHON_VERSION),)
@@ -54,8 +56,16 @@ else
 $(info "Using PYTHON_VERSION $(PYTHON_VERSION)")
 endif
 
+info:
+	@echo "PYTHON_VERSION = $(PYTHON_VERSION)"
+	@echo "PYINC = $(PYINC)"
+
 clean:
 	@echo " Cleaning...";
 	$(RM) -r $(BUILDDIR) $(BINDIR) $(LIBDIR)
+	
+wipe:
+	@echo " Cleaning just build files...";
+	$(RM) -r $(BUILDDIR)
 
 .PHONY: clean
