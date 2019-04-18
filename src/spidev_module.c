@@ -512,12 +512,11 @@ SpiDev_xfer3(SpiDevObject *self, PyObject *args)
 	uint32_t read_len = 0; //Length of bytes to read
 	uint32_t speed_hz = 0;
 	uint8_t bits_per_word = 0;
-	uint16_t ii, len;
+	uint16_t ii, write_len;
 	PyObject *obj;
 	PyObject *seq;
-	// Read sequence
-	PyObject *read_seq;
-	struct spi_ioc_transfer xfer;
+	PyObject	*list;
+	struct spi_ioc_transfer xfer[2];
 	Py_BEGIN_ALLOW_THREADS
 	memset(&xfer, 0, sizeof(xfer));
 	Py_END_ALLOW_THREADS
@@ -528,13 +527,13 @@ SpiDev_xfer3(SpiDevObject *self, PyObject *args)
 		return NULL;
 
 	seq = PySequence_Fast(obj, "expected a sequence");
-	len = PySequence_Fast_GET_SIZE(obj);
-	if (!seq || len <= 0) {
+	write_len = PySequence_Fast_GET_SIZE(obj);
+	if (!seq || write_len <= 0) {
 		PyErr_SetString(PyExc_TypeError, wrmsg_list0);
 		return NULL;
 	}
 
-	if (len > SPIDEV_MAXPATH) {
+	if (write_len > SPIDEV_MAXPATH) {
 		snprintf(wrmsg_text, sizeof(wrmsg_text) - 1, wrmsg_listmax, SPIDEV_MAXPATH);
 		PyErr_SetString(PyExc_OverflowError, wrmsg_text);
 		return NULL;
@@ -542,13 +541,12 @@ SpiDev_xfer3(SpiDevObject *self, PyObject *args)
 
 	Py_BEGIN_ALLOW_THREADS
 	// The malloc-ed length would be based on the length of the input list AND the number of bytes to be read
-	uint32_t total_len = len+read_len;
-	txbuf = malloc(sizeof(__u8) * total_len);
-	rxbuf = malloc(sizeof(__u8) * total_len);
+	txbuf = malloc(sizeof(__u8) * write_len);	// writing the bytes from input object
+	rxbuf = malloc(sizeof(__u8) * read_len);	// reading number of specified bytes
 	Py_END_ALLOW_THREADS
 	// There would be a loop to populate xferptr elements with the bytes
 	// that should be written - along with nothing in the rx_buf element
-	for (ii = 0; ii < len; ii++) {
+	for (ii = 0; ii < write_len; ii++) {
 		PyObject *val = PySequence_Fast_GET_ITEM(seq, ii);
 #if PY_MAJOR_VERSION < 3
 		if (PyInt_Check(val)) {
@@ -574,14 +572,22 @@ SpiDev_xfer3(SpiDevObject *self, PyObject *args)
 	}
 
 	Py_BEGIN_ALLOW_THREADS
-	xfer.tx_buf = (unsigned long)txbuf;
-	xfer.rx_buf = (unsigned long)rxbuf;
-	xfer.len = total_len;
-	xfer.delay_usecs = delay_usecs;
-	xfer.speed_hz = speed_hz ? speed_hz : self->max_speed_hz;
-	xfer.bits_per_word = bits_per_word ? bits_per_word : self->bits_per_word;
+	xfer[0].tx_buf = (unsigned long) txbuf;
+	xfer[1].rx_buf = (unsigned long) rxbuf;
+	xfer[0].len = write_len;
+	xfer[1].len = read_len;
+	xfer[0].cs_change = 0;
+	//xfer[1].cs_change = SPI_CS_CHANGE;
+	xfer[1].cs_change = 0;
+	
+	xfer[0].delay_usecs = delay_usecs;
+	xfer[1].delay_usecs = delay_usecs;
+	xfer[0].speed_hz = speed_hz ? speed_hz : self->max_speed_hz;
+	xfer[1].speed_hz = speed_hz ? speed_hz : self->max_speed_hz;
+	xfer[0].bits_per_word = bits_per_word ? bits_per_word : self->bits_per_word;
+	xfer[1].bits_per_word = bits_per_word ? bits_per_word : self->bits_per_word;
 
-	status = ioctl(self->fd, SPI_IOC_MESSAGE(1), &xfer);
+	status = ioctl(self->fd, SPI_IOC_MESSAGE(2), &xfer);
 	Py_END_ALLOW_THREADS
 	if (status < 0) {
 		PyErr_SetFromErrno(PyExc_IOError);
@@ -591,11 +597,10 @@ SpiDev_xfer3(SpiDevObject *self, PyObject *args)
 	}
 	
 	// Create output sequence with read_len bytes
-	read_seq = PyList_New(read_len);
-	// Read input buffer
+	list = PyList_New(read_len);
 	for (ii = 0; ii < read_len; ii++) {
-		PyObject *val = Py_BuildValue("l", (long)rxbuf[len+ii]);
-		PySequence_SetItem(read_seq, ii, val);
+		PyObject *val = Py_BuildValue("l", (long)rxbuf[ii]);
+		PyList_SET_ITEM(list, ii, val);
 	}
 
 	
@@ -614,13 +619,14 @@ SpiDev_xfer3(SpiDevObject *self, PyObject *args)
 
 	// Free input sequence object
 	// for reference counting
+	// TODO: does this still count the seq object as a reference?
 	if (PyTuple_Check(obj)) {
 		PyObject *old = seq;
 		Py_DECREF(old);
 	}
 
 	// Return new list of values read
-	return read_seq;
+	return list;
 }
 
 static int __spidev_set_mode( int fd, __u8 mode) {
@@ -1134,7 +1140,7 @@ static PyMethodDef SpiDev_methods[] = {
 	{"xfer2", (PyCFunction)SpiDev_xfer2, METH_VARARGS,
 		SpiDev_xfer2_doc},
 	{"xfer3", (PyCFunction)SpiDev_xfer3, METH_VARARGS,
-		SpiDev_xfer3_doc}
+		SpiDev_xfer3_doc},
 	{"__enter__", (PyCFunction)SpiDev_enter, METH_VARARGS,
 		NULL},
 	{"__exit__", (PyCFunction)SpiDev_exit, METH_VARARGS,
